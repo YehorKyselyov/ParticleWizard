@@ -23,6 +23,7 @@ public class CalculateBranchingTask
 public class BranchingCalculator : Service<CalculateBranchingTask>
 {
     public override Validator<CalculateBranchingTask> Validator { get; set; } = new BranchingValidator();
+
     protected override void ProcessImpl(CalculateBranchingTask task)
     {
         task.BranchingFunction = CalculateBranching(task);
@@ -40,6 +41,45 @@ public class BranchingCalculator : Service<CalculateBranchingTask>
         return Br;
     }
 
+    private Func<double, double>? CalculateMatrixElement(CalculateBranchingTask task)
+    {
+        Func<double, double>? output = null;
+        var formFactor = task.OutParticle.GetFormFactorFunction();
+        switch (task.OutParticle.Type)
+        {
+            case ParticleType.Scalar:
+                output = ms =>
+                    (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(ms, 2)) /
+                    (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
+                break;
+            case ParticleType.PseudoScalar:
+                output = ms =>
+                    (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2)) /
+                    (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
+                break;
+            case ParticleType.Vector:
+                output = ms =>
+                    2 * task.InputParticle.Mass * absPS(task, ms)  /
+                    (task.InputParticle.Quarks.Quark.Mass + task.OutParticle.Quarks.Quark.Mass) * formFactor(ms);
+                break;
+            case ParticleType.PseudoVector:
+                output = ms =>
+                    2 * task.InputParticle.Mass * absPS(task, ms)  /
+                    (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
+                break;
+            case ParticleType.Tensor:
+                output = ms =>
+                    -2 /
+                    (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * Math.Sqrt(2d / 3d) *
+                    task.InputParticle.Mass / task.OutParticle.Mass * Math.Pow(absPS(task, ms), 2) * formFactor(ms);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        return output;
+    }
+
     private double absPS(CalculateBranchingTask task, double ms) // particle's momentum in rest frame of initial meson
     {
         return 0.5 * Math.Sqrt(Math.Pow(task.InputParticle.Mass, 4) -
@@ -54,43 +94,14 @@ public class BranchingCalculator : Service<CalculateBranchingTask>
         if (initialQuark is BQuark && outQuark is SQuark) return 3.6e-4;
         return 0;
     }
-
-    private Func<double, double>? CalculateMatrixElement(CalculateBranchingTask task)
-    {
-        Func<double, double>? output = null;
-        var formFactor = task.OutParticle.GetFormFactorFunction();
-
-        switch (task.OutParticle.Type)
-        {
-            case ParticleType.Scalar:
-                output = ms =>
-                    (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(ms, 2)) /
-                    (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
-                break;
-            case ParticleType.PseudoScalar:
-                output = ms =>
-                    (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2)) /
-                    (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
-                break;
-            case ParticleType.Vector:
-                break;
-            case ParticleType.PseudoVector:
-                break;
-            case ParticleType.Tensor:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-
-        return output;
-    }
 }
 
 public class BranchingValidator : Validator<CalculateBranchingTask>
 {
     public override bool PreValidate(CalculateBranchingTask task)
     {
-        return task.InputParticle.Type == ParticleType.PseudoScalar || WithError("Currently only production from PseudoScalar is supported");
+        return task.InputParticle.Type == ParticleType.PseudoScalar ||
+               WithError("Currently only production from PseudoScalar is supported");
     }
 
     public override bool PostValidate(CalculateBranchingTask task)
