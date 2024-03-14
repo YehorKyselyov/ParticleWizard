@@ -51,14 +51,26 @@ public class BMeson : Meson
 
 public class KMeson : Meson
 {
-    private const double f0 = 0.33;
-    private const double mx = 6.16; 
+    // private const double f0 = 0.33;
+    // private const double mx = 6.16; 
+    //
+    // public override Func<double, double> GetFormFactorFunction()
+    // {
+    //     return ms => f0 / (1 - Math.Pow(ms, 2) / Math.Pow(mx, 2));
+    // }
+    
+    private const double r1 = 0.162;
+    private const double r2 = 0.173;
+    private const double mr = 5.41;
     
     public override Func<double, double> GetFormFactorFunction()
     {
-        return ms => f0 / (1 - Math.Pow(ms, 2) / Math.Pow(mx, 2));
+        return ms =>
+            r1 / (1 - Math.Pow(ms, 2) / Math.Pow(mr, 2)) +
+                  r2 / Math.Pow(1 - Math.Pow(ms, 2) / Math.Pow(mr, 2), 2);
     }
-    public KMeson() : base(0.5, 1.238 * 1e-8, (new SQuark(), new UQuark()), ParticleType.PseudoScalar)
+    
+    public KMeson() : base(0.497, 1.238 * 1e-8, (new SQuark(), new UQuark()), ParticleType.PseudoScalar)
     {
     }
 }

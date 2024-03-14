@@ -26,12 +26,51 @@ public class BranchingCalculator : Service<CalculateBranchingTask>
 
     protected override void ProcessImpl(CalculateBranchingTask task)
     {
-        task.BranchingFunction = CalculateBranching(task);
+        task.BranchingFunction = task.NewPhysicsParticle switch
+        {
+            ParticleType.Scalar => CalculateScalarBranching(task),
+            ParticleType.Vector => CalculateVectorBranching(task),
+            _ => throw new ArgumentOutOfRangeException(nameof(task.NewPhysicsParticle))
+        };
     }
 
-    private Func<double, double>? CalculateBranching(CalculateBranchingTask task)
+    private Func<double, double>? CalculateVectorBranching(CalculateBranchingTask task)
     {
-        var Mfi = CalculateMatrixElement(task);
+        Func<double, double>? Mfi2 = CalculateMatrixElementForVector(task);
+        var Xi = FigureNeededCoeff(task.InputParticle.Quarks.Quark, task.OutParticle.Quarks.Quark);
+        var higgsMean = 246.22; //GeV
+        var Br = new Func<double, double>(ms => 1 / task.InputParticle.DecayWidth * Math.Pow(Xi, 2) *
+            Mfi2(ms) * Mfi2(ms) *
+            Math.Pow(task.InputParticle.Quarks.Quark.Mass, 2) / (32 * Math.PI * Math.Pow(higgsMean, 2)) *
+            absPS(task, ms) / Math.Pow(task.InputParticle.Mass, 2));
+        return Br;
+    }
+    
+    private Func<double, double>? CalculateMatrixElementForVector(CalculateBranchingTask task)
+    {
+        var formFactor = task.OutParticle.GetFormFactorFunction();
+        Func<double, double>? output = task.OutParticle.Type switch
+        {
+            ParticleType.Scalar => ms =>
+                2 / (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(ms) *
+                absPS(task, ms) * task.InputParticle.Mass / ms,
+            ParticleType.PseudoScalar => q =>
+                2 / (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(q) *
+                absPS(task, q) * task.InputParticle.Mass / q,
+                // formFactor(q) * formFactor(q) /
+                // Math.Pow(task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass, 2) *
+                // (Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(q, 2)) / (3 * Math.Pow(q, 2)) *
+                // (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(task.InputParticle.Mass, 2) + 2 * absPS(task, q) + 2 *
+                //     Math.Sqrt(Math.Pow(task.InputParticle.Mass, 2) + Math.Pow(absPS(task, q), 2)) *
+                //     Math.Sqrt(Math.Pow(task.InputParticle.Mass, 2) + Math.Pow(absPS(task, q), 2))),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        return output;
+    }
+
+    private Func<double, double>? CalculateScalarBranching(CalculateBranchingTask task)
+    {
+        Func<double, double>? Mfi = CalculateMatrixElementForScalar(task);
         var Xi = FigureNeededCoeff(task.InputParticle.Quarks.Quark, task.OutParticle.Quarks.Quark);
         var higgsMean = 246.22; //GeV
         var Br = new Func<double, double>(ms => 1 / task.InputParticle.DecayWidth * Math.Pow(Xi, 2) *
@@ -41,41 +80,29 @@ public class BranchingCalculator : Service<CalculateBranchingTask>
         return Br;
     }
 
-    private Func<double, double>? CalculateMatrixElement(CalculateBranchingTask task)
+    private Func<double, double>? CalculateMatrixElementForScalar(CalculateBranchingTask task)
     {
         Func<double, double>? output = null;
         var formFactor = task.OutParticle.GetFormFactorFunction();
-        switch (task.OutParticle.Type)
+        output = task.OutParticle.Type switch
         {
-            case ParticleType.Scalar:
-                output = ms =>
-                    (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(ms, 2)) /
-                    (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
-                break;
-            case ParticleType.PseudoScalar:
-                output = ms =>
-                    (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2)) /
-                    (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
-                break;
-            case ParticleType.Vector:
-                output = ms =>
-                    2 * task.InputParticle.Mass * absPS(task, ms)  /
-                    (task.InputParticle.Quarks.Quark.Mass + task.OutParticle.Quarks.Quark.Mass) * formFactor(ms);
-                break;
-            case ParticleType.PseudoVector:
-                output = ms =>
-                    2 * task.InputParticle.Mass * absPS(task, ms)  /
-                    (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * formFactor(ms);
-                break;
-            case ParticleType.Tensor:
-                output = ms =>
-                    -2 /
-                    (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * Math.Sqrt(2d / 3d) *
-                    task.InputParticle.Mass / task.OutParticle.Mass * Math.Pow(absPS(task, ms), 2) * formFactor(ms);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+            ParticleType.Scalar => ms =>
+                (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(ms, 2)) /
+                (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(ms),
+            ParticleType.PseudoScalar => ms =>
+                (Math.Pow(task.InputParticle.Mass, 2) - Math.Pow(task.OutParticle.Mass, 2)) /
+                (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * formFactor(ms),
+            ParticleType.Vector => ms =>
+                2 * task.InputParticle.Mass * absPS(task, ms) /
+                (task.InputParticle.Quarks.Quark.Mass + task.OutParticle.Quarks.Quark.Mass) * formFactor(ms),
+            ParticleType.PseudoVector => ms =>
+                2 * task.InputParticle.Mass * absPS(task, ms) /
+                (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * formFactor(ms),
+            ParticleType.Tensor => ms =>
+                -2 / (task.OutParticle.Quarks.Quark.Mass - task.InputParticle.Quarks.Quark.Mass) * Math.Sqrt(2d / 3d) *
+                task.InputParticle.Mass / task.OutParticle.Mass * Math.Pow(absPS(task, ms), 2) * formFactor(ms),
+            _ => throw new ArgumentOutOfRangeException()
+        };
 
         return output;
     }

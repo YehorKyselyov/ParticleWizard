@@ -13,7 +13,58 @@ namespace ParticleWizard
         public MainWindow()
         {
             InitializeComponent();
-            PlotScalarBranchings();
+            // PlotScalarBranchings();
+            PlotVectorBranchings();
+        }
+
+        private void PlotVectorBranchings()
+        {
+            var branchingCalculator = new BranchingCalculator();
+            var myModel = new PlotModel { Title = "Branching channels", IsLegendVisible = true };
+            
+            var calculateScalarBrTask = new CalculateBranchingTask(new BMeson(), new KMeson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateScalarBrTask);
+            var series = new FunctionSeries(calculateScalarBrTask.BranchingFunction, 0, 5, 0.001, "K");
+            series.Color = OxyColor.FromRgb(0, 0, 255);
+            myModel.Series.Add(series);
+            
+            var calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar1430Meson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateVectorBrTask);
+            var K1430Br = calculateVectorBrTask.BranchingFunction;
+            calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar700Meson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateVectorBrTask);
+            var K700Br = calculateVectorBrTask.BranchingFunction;
+             series = new FunctionSeries(K1430Br + K700Br , 0, 5, 0.001, "K*0");
+            series.Color = OxyColor.FromRgb(255, 165, 0);
+            myModel.Series.Add(series);
+            var legend = new Legend
+            {
+                IsLegendVisible = true,
+                LegendTitle = "Series Legend",
+                LegendPlacement = LegendPlacement.Inside,
+                LegendPosition = LegendPosition.BottomLeft,
+                LegendBackground = OxyColor.FromAColor(200, OxyColors.White),
+                LegendBorder = OxyColors.Black
+            };
+            myModel.Legends.Add(legend);
+            
+            myModel.Axes.Add(new LogarithmicAxis
+            {
+                Position = AxisPosition.Left,
+                Title = "Br",
+                Minimum = 0.01,
+                Maximum = 100,
+                Base = 10 // This is the logarithm base
+            });
+            myModel.Axes.Add(new LinearAxis()
+            {
+                Position = AxisPosition.Bottom,
+                Minimum = 0.1,
+                Maximum = 5,
+                Title = "Mass [GeV]"
+            });
+            
+            MyPlot.Model = myModel;
         }
 
         private void PlotScalarBranchings()
