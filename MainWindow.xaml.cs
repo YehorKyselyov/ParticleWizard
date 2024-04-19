@@ -22,27 +22,46 @@ namespace ParticleWizard
             var branchingCalculator = new BranchingCalculator();
             var myModel = new PlotModel { Title = "Branching channels", IsLegendVisible = true };
             
-            var calculateScalarBrTask = new CalculateBranchingTask(new BMeson(), new KMeson(), ParticleType.Vector);
-            branchingCalculator.ProcessAsync(calculateScalarBrTask);
-            var series = new FunctionSeries(calculateScalarBrTask.BranchingFunction, 0, 5, 0.001, "K");
+            var calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KMeson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateVectorBrTask);
+            var series = new FunctionSeries(calculateVectorBrTask.BranchingFunction, 0, 5, 0.001, "K");
             series.Color = OxyColor.FromRgb(0, 0, 255);
             myModel.Series.Add(series);
             
-            var calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar1430Meson(), ParticleType.Vector);
+            calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar1430Meson(), ParticleType.Vector);
             branchingCalculator.ProcessAsync(calculateVectorBrTask);
             var K1430Br = calculateVectorBrTask.BranchingFunction;
             calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar700Meson(), ParticleType.Vector);
             branchingCalculator.ProcessAsync(calculateVectorBrTask);
             var K700Br = calculateVectorBrTask.BranchingFunction;
-             series = new FunctionSeries(K1430Br + K700Br , 0, 5, 0.001, "K*0");
+             series = new FunctionSeries(m => K1430Br(m) + K700Br(m) , 0, 5, 0.001, "K*0");
             series.Color = OxyColor.FromRgb(255, 165, 0);
+            myModel.Series.Add(series);
+            
+            calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar892Meson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateVectorBrTask);
+            var K892Br = calculateVectorBrTask.BranchingFunction;
+            calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar1410Meson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateVectorBrTask);
+            var K1410Br = calculateVectorBrTask.BranchingFunction;
+            calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KStar1680Meson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateVectorBrTask);
+            var K1680r = calculateVectorBrTask.BranchingFunction;
+            series = new FunctionSeries(m => K892Br(m) + K1410Br(m) + K1680r(m), 0, 5, 0.001, "K*");
+            series.Color = OxyColor.FromRgb(255, 0, 0);
+            myModel.Series.Add(series);
+            
+            calculateVectorBrTask = new CalculateBranchingTask(new BMeson(), new KTwoStar1430Meson(), ParticleType.Vector);
+            branchingCalculator.ProcessAsync(calculateVectorBrTask);
+            var K2Star = calculateVectorBrTask.BranchingFunction;
+            series = new FunctionSeries(K2Star, 0.01, 5, 0.001, "K2*");
             myModel.Series.Add(series);
             var legend = new Legend
             {
                 IsLegendVisible = true,
                 LegendTitle = "Series Legend",
                 LegendPlacement = LegendPlacement.Inside,
-                LegendPosition = LegendPosition.BottomLeft,
+                LegendPosition = LegendPosition.TopRight,
                 LegendBackground = OxyColor.FromAColor(200, OxyColors.White),
                 LegendBorder = OxyColors.Black
             };
@@ -52,8 +71,8 @@ namespace ParticleWizard
             {
                 Position = AxisPosition.Left,
                 Title = "Br",
-                Minimum = 0.01,
-                Maximum = 100,
+                Minimum = 1e-3,
+                Maximum = 1000,
                 Base = 10 // This is the logarithm base
             });
             myModel.Axes.Add(new LinearAxis()

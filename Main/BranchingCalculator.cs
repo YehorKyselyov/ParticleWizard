@@ -40,33 +40,57 @@ public class BranchingCalculator : Service<CalculateBranchingTask>
         var Xi = FigureNeededCoeff(task.InputParticle.Quarks.Quark, task.OutParticle.Quarks.Quark);
         var higgsMean = 246.22; //GeV
         var Br = new Func<double, double>(ms => 1 / task.InputParticle.DecayWidth * Math.Pow(Xi, 2) *
-            Mfi2(ms) * Mfi2(ms) *
+            Mfi2(ms) *
             Math.Pow(task.InputParticle.Quarks.Quark.Mass, 2) / (32 * Math.PI * Math.Pow(higgsMean, 2)) *
             absPS(task, ms) / Math.Pow(task.InputParticle.Mass, 2));
         return Br;
     }
-    
+
     private Func<double, double>? CalculateMatrixElementForVector(CalculateBranchingTask task)
     {
         var formFactor = task.OutParticle.GetFormFactorFunction();
         Func<double, double>? output = task.OutParticle.Type switch
         {
-            ParticleType.Scalar => ms =>
-                2 / (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(ms) *
-                absPS(task, ms) * task.InputParticle.Mass / ms,
+            ParticleType.Scalar => q =>
+                Math.Pow(formFactor(q) * absPS(task, q), 2)  
+                * Math.Pow( Math.Pow(q,2) - Math.Pow(task.OutParticle.Mass,2) + Math.Pow(task.InputParticle.Mass,2) ,2) / Math.Pow(q*task.InputParticle.Mass,2),
             ParticleType.PseudoScalar => q =>
-                2 / (task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass) * formFactor(q) *
-                absPS(task, q) * task.InputParticle.Mass / q,
-                // formFactor(q) * formFactor(q) /
-                // Math.Pow(task.OutParticle.Quarks.Quark.Mass + task.InputParticle.Quarks.Quark.Mass, 2) *
-                // (Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(q, 2)) / (3 * Math.Pow(q, 2)) *
-                // (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(task.InputParticle.Mass, 2) + 2 * absPS(task, q) + 2 *
-                //     Math.Sqrt(Math.Pow(task.InputParticle.Mass, 2) + Math.Pow(absPS(task, q), 2)) *
-                //     Math.Sqrt(Math.Pow(task.InputParticle.Mass, 2) + Math.Pow(absPS(task, q), 2))),
+                Math.Pow(formFactor(q) * absPS(task, q), 2)  
+                * Math.Pow( Math.Pow(q,2) - Math.Pow(task.OutParticle.Mass,2) + Math.Pow(task.InputParticle.Mass,2) ,2) / Math.Pow(q*task.InputParticle.Mass,2),
+            ParticleType.Vector => m =>
+            {
+                Func<double, double> a1 = ((task.OutParticle as IManyFormFactors)!).A1;
+                Func<double, double> a2 = ((task.OutParticle as IManyFormFactors)!).A2;
+                Func<double, double> v = ((task.OutParticle as IManyFormFactors)!).V0;
+
+
+                double part1 = 1 / (4 * Math.Pow(m, 2) * Math.Pow(task.OutParticle.Mass, 2) * Math.Pow(task.OutParticle.Mass + task.InputParticle.Mass, 2));
+                double part2 = Math.Pow(a1(m), 2) * Math.Pow(task.OutParticle.Mass + task.InputParticle.Mass, 4) * (Math.Pow(m, 4) + 2 * Math.Pow(m, 2) * (5 * Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 2))
+                               + 2 * a1(m) * a2(m) * Math.Pow(task.OutParticle.Mass + task.InputParticle.Mass, 2) * (Math.Pow(m, 6) - Math.Pow(m, 4) * (Math.Pow(task.OutParticle.Mass, 2) + 3 * Math.Pow(task.InputParticle.Mass, 2)) - Math.Pow(m, 2) * (Math.Pow(task.OutParticle.Mass, 4) + 2 * Math.Pow(task.OutParticle.Mass, 2) * Math.Pow(task.InputParticle.Mass, 2) - 3 * Math.Pow(task.InputParticle.Mass, 4)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 3))
+                               + Math.Pow(a2(m), 2) * Math.Pow(Math.Pow(m, 4) - 2 * Math.Pow(m, 2) * (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(task.InputParticle.Mass, 2)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 2), 2)
+                               + 8 * Math.Pow(m, 2) * Math.Pow(task.OutParticle.Mass, 2) * Math.Pow(v(m), 2) * (Math.Pow(m, 4) - 2 * Math.Pow(m, 2) * (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(task.InputParticle.Mass, 2)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 2));
+
+                return part1 * part2;
+            },
+            ParticleType.Tensor => m =>
+            {
+                Func<double, double> A1 = ((task.OutParticle as IManyFormFactors)!).A1;
+                Func<double, double> A2 = ((task.OutParticle as IManyFormFactors)!).A2;
+
+                double part1 = 1 / (24 * Math.Pow(m, 2) * Math.Pow(task.OutParticle.Mass, 4) * Math.Pow(task.InputParticle.Mass, 2) * Math.Pow(task.OutParticle.Mass + task.InputParticle.Mass, 2));
+                double part2 = Math.Pow(m, 4) - 2 * Math.Pow(m, 2) * (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(task.InputParticle.Mass, 2)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 2);
+                double part3 = Math.Pow(A1(m), 2) * Math.Pow(task.OutParticle.Mass + task.InputParticle.Mass, 4) * (Math.Pow(m, 4) + Math.Pow(m, 2) * (8 * Math.Pow(task.OutParticle.Mass, 2) - 2 * Math.Pow(task.InputParticle.Mass, 2)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 2))
+                               + 2 * A1(m) * A2(m) * Math.Pow(task.OutParticle.Mass + task.InputParticle.Mass, 2) * (Math.Pow(m, 6) - Math.Pow(m, 4) * (Math.Pow(task.OutParticle.Mass, 2) + 3 * Math.Pow(task.InputParticle.Mass, 2)) - Math.Pow(m, 2) * (Math.Pow(task.OutParticle.Mass, 4) + 2 * Math.Pow(task.OutParticle.Mass, 2) * Math.Pow(task.InputParticle.Mass, 2) - 3 * Math.Pow(task.InputParticle.Mass, 4)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 3))
+                               + Math.Pow(A2(m), 2) * Math.Pow(Math.Pow(m, 4) - 2 * Math.Pow(m, 2) * (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(task.InputParticle.Mass, 2)) + Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(task.InputParticle.Mass, 2), 2), 2);
+
+                return part1 * part2 * part3;
+            },
+
             _ => throw new ArgumentOutOfRangeException()
         };
-        return output;
+        return q => Math.Abs(output(q));
     }
+
 
     private Func<double, double>? CalculateScalarBranching(CalculateBranchingTask task)
     {
@@ -109,11 +133,15 @@ public class BranchingCalculator : Service<CalculateBranchingTask>
 
     private double absPS(CalculateBranchingTask task, double ms) // particle's momentum in rest frame of initial meson
     {
-        return 0.5 * Math.Sqrt(Math.Pow(task.InputParticle.Mass, 4) -
-                               2 * Math.Pow(task.InputParticle.Mass, 2) *
-                               (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(ms, 2)) +
-                               Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(ms, 2), 2)) /
-               task.InputParticle.Mass;
+        if (task.InputParticle.Mass >= task.OutParticle.Mass + ms)
+        {
+            return 0.5 * Math.Sqrt(Math.Pow(task.InputParticle.Mass, 4) -
+                                   2 * Math.Pow(task.InputParticle.Mass, 2) *
+                                   (Math.Pow(task.OutParticle.Mass, 2) + Math.Pow(ms, 2)) +
+                                   Math.Pow(Math.Pow(task.OutParticle.Mass, 2) - Math.Pow(ms, 2), 2)) /
+                   task.InputParticle.Mass;
+        }
+        return 0;
     }
 
     private double FigureNeededCoeff(Quark initialQuark, Quark outQuark)

@@ -109,59 +109,132 @@ public class KStar1430Meson : Meson
     }
 }
 
-public class KStar892Meson : Meson
+public class KStar892Meson : Meson, IManyFormFactors
 {
     private const double r1 = 1.364;
     private const double r2 = -0.99;
     private const double mr = 5.28;
     private const double mFit = 6.06465;
-    private const double A0 = 0.374;
+    private const double Aa0 = 0.374;
     
     public override Func<double, double> GetFormFactorFunction()
     {
-        return ms => ms == 0 ? A0 : r1 / (1 - Math.Pow(ms,2)/ Math.Pow(mr,2)) + r2 / (1 - Math.Pow(ms,2)/ Math.Pow(mFit,2)) ;
+        return ms => ms == 0 ? Aa0 : r1 / (1 - Math.Pow(ms,2)/ Math.Pow(mr,2)) + r2 / (1 - Math.Pow(ms,2)/ Math.Pow(mFit,2)) ;
     }
     public KStar892Meson() : base(0.895, (new SQuark(), new UQuark()), ParticleType.Vector, 0.046)
     {
     }
+
+    public double F0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A1(double q)
+    {
+        return 0.29 / (1 - q * q / 40.38);
+    }
+
+    public double A2(double q)
+    {
+        return -0.084 / (1 - q * q / 52) + 0.342 / Math.Pow(1 - q * q / 52, 2);
+    }
+
+    public double V0(double q)
+    {
+        return 0.923 / (1 - q * q / Math.Pow(5.32, 2)) - 0.511 / (1 - q * q / 49.40);
+    }
 }
 
-public class KStar1410Meson : Meson
+public class KStar1410Meson : Meson, IManyFormFactors
 {
     private const double perpen = 0.28;
     private const double parallel = 0.22;
-    private const double A0 = 0.3;
+    private const double Aa0 = 0.3;
     private const double mb = 5.28;
 
     public override Func<double, double> GetFormFactorFunction()
     {
         return ms =>
             ms == 0
-                ? A0
+                ? Aa0
                 : ((1 - 2 * Math.Pow(Mass, 2) / (Math.Pow(mb, 2) + Math.Pow(Mass, 2) - Math.Pow(ms, 2))) * parallel +
                    Mass / mb * perpen) / (1 - Math.Pow(ms, 2) / Math.Pow(mb, 2));
     }
     public KStar1410Meson() : base(1.414, (new SQuark(), new UQuark()), ParticleType.Vector, 0.232)
     {
     }
+    public double F0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A1(double q)
+    {
+        return 0.29 / (1 - q * q / 40.38);
+    }
+
+    public double A2(double q)
+    {
+        return -0.084 / (1 - q * q / 52) + 0.342 / Math.Pow(1 - q * q / 52, 2);
+    }
+
+    public double V0(double q)
+    {
+        return 0.923 / (1 - q * q / Math.Pow(5.32, 2)) - 0.511 / (1 - q * q / 49.40);
+    }
 }
-public class KStar1680Meson : Meson
+public class KStar1680Meson : Meson, IManyFormFactors
 {
     private const double perpen = 0.24;
     private const double parallel = 0.18;
-    private const double A0 = 0.22;
+    private const double Aa0 = 0.22;
     private const double mb = 5.28;
     
     public override Func<double, double> GetFormFactorFunction()
     {
         return ms =>
             ms == 0
-                ? A0
+                ? Aa0
                 : ((1 - 2 * Math.Pow(Mass, 2) / (Math.Pow(mb, 2) + Math.Pow(Mass, 2) - Math.Pow(ms, 2))) * parallel +
                    Mass / mb * perpen) / (1 - Math.Pow(ms, 2) / Math.Pow(mb, 2));
     }
-    public KStar1680Meson() : base(1.718, (new SQuark(), new UQuark()), ParticleType.Vector, 0.322)
+    public KStar1680Meson() : base(1.68, (new SQuark(), new UQuark()), ParticleType.Vector, 0.322)
     {
+    }
+    public double F0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A1(double q)
+    {
+        return 0.29 / (1 - q * q / 40.38);
+    }
+
+    public double A2(double q)
+    {
+        return -0.084 / (1 - q * q / 52) + 0.342 / Math.Pow(1 - q * q / 52, 2);
+    }
+
+    public double V0(double q)
+    {
+        return 0.923 / (1 - q * q / Math.Pow(5.32, 2)) - 0.511 / (1 - q * q / 49.40);
     }
 }
 
@@ -229,21 +302,65 @@ public class KOne1400Meson : Meson
     }
 }
 
-public class KTwoStar1430Meson : Meson
+public class KTwoStar1430Meson : Meson, IManyFormFactors
 {
-    private const double f0 = 0.23;
-    private const double a = 1.23;
-    private const double b = 0.76;
-    private const double mb = 5.28;
+    private const double Ff0 = 0.23;
+    private const double A = 1.23;
+    private const double B = 0.76;
+    private const double Mb = 5.28;
 
     
     public override Func<double, double> GetFormFactorFunction()
     {
-        return ms => f0 / (1 - a * Math.Pow(ms, 2) / Math.Pow(mb, 2) + b * Math.Pow(ms, 4) / Math.Pow(mb, 4)) /
-                     (1 - Math.Pow(ms, 2) / Math.Pow(mb, 2));
+        return ms => Ff0 / (1 - A * Math.Pow(ms, 2) / Math.Pow(Mb, 2) + B * Math.Pow(ms, 4) / Math.Pow(Mb, 4)) /
+                     (1 - Math.Pow(ms, 2) / Math.Pow(Mb, 2));
     }
     
     public KTwoStar1430Meson() : base(1.430, (new SQuark(), new UQuark()), ParticleType.Tensor, 0.232)
     { 
     }
+
+    public double F0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A0(double m)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double A1(double m)
+    {
+        var f0 = 0.22d;
+        var a = 1.42d;
+        var b = 0.5d;
+        var mb = Mb;
+        return f0 / (1 - a * Math.Pow(m, 2) / Math.Pow(mb, 2) + b * Math.Pow(m, 4) / Math.Pow(mb, 4)) /
+               (1 - Math.Pow(m, 2) / Math.Pow(mb, 2));
+    }
+
+    public double A2(double m)
+    {
+        var f0 = 0.21d;
+        var a = 1.96d;
+        var b = 1.79d;
+        var mb = Mb;
+        return f0 / (1 - a * Math.Pow(m, 2) / Math.Pow(mb, 2) + b * Math.Pow(m, 4) / Math.Pow(mb, 4)) /
+               (1 - Math.Pow(m, 2) / Math.Pow(mb, 2));
+    }
+
+    public double V0(double m)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+interface IManyFormFactors
+{
+    double F0(double m);
+    double A0(double m);
+    double A1(double m);
+    double A2(double m);
+    double V0(double m);
 }
