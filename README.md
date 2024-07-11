@@ -14,4 +14,4 @@ The library features a branching ratio calculator tailored for evaluating the br
 Currently, it supports scenarios where the initial meson is a pseudoscalar, the new physics particle is a scalar, and the resulting meson is either a pseudoscalar or a scalar. This tool assists researchers in exploring potential new physics scenarios by providing a means to compute the branching ratios of hypothetical reactions involving mesons.
 
 ## Future Plans
-The library is under active development, with plans for expansion to cover a broader range of particles and reactions. The goal is to extend the functionality to encompass all necessary calculations for an upcoming research article in particle physics, including support for additional particle types and reaction scenarios.
+The library is under slow development, with plans for expansion to cover a broader range of particles and reactions. The goal is to extend the functionality to encompass all necessary calculations for an upcoming research article in particle physics, including support for additional particle types and reaction scenarios.
